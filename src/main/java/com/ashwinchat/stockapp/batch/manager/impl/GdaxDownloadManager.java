@@ -3,7 +3,6 @@ package com.ashwinchat.stockapp.batch.manager.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -73,8 +72,7 @@ public class GdaxDownloadManager implements IDownloadManager {
 
     }
 
-    private String downloadFromGdax(String stockName, String start, String end)
-            throws MalformedURLException, IOException {
+    private String downloadFromGdax(String stockName, String start, String end) throws IOException {
         String downloadUrl = String.format(URL_FORMAT, stockName, start, end);
         try (InputStream in = new URL(downloadUrl).openStream()) {
             return IOUtils.toString(in, StandardCharsets.UTF_8);
