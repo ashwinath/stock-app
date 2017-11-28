@@ -77,8 +77,7 @@ public class GdaxDownloadManager implements IDownloadManager {
             throws MalformedURLException, IOException {
         String downloadUrl = String.format(URL_FORMAT, stockName, start, end);
         try (InputStream in = new URL(downloadUrl).openStream()) {
-            String jsonResult = IOUtils.toString(in, StandardCharsets.UTF_8);
-            return jsonResult;
+            return IOUtils.toString(in, StandardCharsets.UTF_8);
         }
     }
 
