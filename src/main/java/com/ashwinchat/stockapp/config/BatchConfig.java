@@ -9,7 +9,7 @@ import com.ashwinchat.stockapp.batch.manager.impl.GdaxDownloadManager;
 @Configuration
 public class BatchConfig {
 
-    @Bean
+    @Bean(name = "gdaxDownloadManager")
     public IDownloadManager gdaxDownloadManager() {
         return new GdaxDownloadManager();
     }

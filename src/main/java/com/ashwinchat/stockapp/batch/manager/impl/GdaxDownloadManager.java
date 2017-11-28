@@ -27,7 +27,8 @@ public class GdaxDownloadManager implements IDownloadManager {
     private Logger log = Logger.getLogger(GdaxDownloadManager.class.getName());
 
     @Override
-    public List<StockHistoryView> download(String stockType, String stockName, String start, String end) {
+    public List<StockHistoryView> download(String stockType, String stockName, String start, String end)
+            throws Exception {
         try {
             String jsonString = this.downloadFromGdax(stockName, start, end);
             List<StockHistoryView> results = this.unmarshal(jsonString);
@@ -35,11 +36,9 @@ public class GdaxDownloadManager implements IDownloadManager {
             results.forEach(result -> result.getPk().setStockTyp(stockType));
             return results;
         } catch (Exception e) {
-            // TODO: throw business exception so it can be rolled back
             log.error(String.format(DOWNLOAD_ERROR, stockName, stockType, start, end));
-            log.error(e, e);
+            throw e;
         }
-        return new ArrayList<>();
     }
 
     /*
