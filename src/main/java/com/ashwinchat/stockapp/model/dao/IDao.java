@@ -6,7 +6,7 @@ import org.hibernate.query.Query;
 
 import com.ashwinchat.stockapp.model.view.DatabaseView;
 
-public interface IDao<V extends DatabaseView, P> {
+public interface IDao<V extends DatabaseView> {
     void save(V view);
 
     void saveAll(List<V> views);

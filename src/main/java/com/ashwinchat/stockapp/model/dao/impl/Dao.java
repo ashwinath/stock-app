@@ -13,7 +13,7 @@ import com.ashwinchat.stockapp.model.view.DatabaseView;
 import com.ashwinchat.stockapp.model.view.embeddable.EmbeddableTimeStamps;
 
 @Repository("genericDao")
-public class Dao<V extends DatabaseView, P> implements IDao<V, P> {
+public class Dao<V extends DatabaseView> implements IDao<V> {
 
     private static final int UPDATE_FLAG = 1;
     private static final int INSERT_FLAG = 2;

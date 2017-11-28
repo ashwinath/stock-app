@@ -22,7 +22,7 @@ public class TestStockHistory extends HibernateCrudTest {
 
     @Autowired
     @Qualifier("genericDao")
-    private IDao<StockHistoryView, StockPrimaryKey> stockHistoryDao;
+    private IDao<StockHistoryView> stockHistoryDao;
 
     @Override
     @Test
