@@ -8,25 +8,135 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
+import javax.transaction.Transactional;
+
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.IOUtils;
+import org.hibernate.query.Query;
 import org.jboss.logging.Logger;
 import org.json.JSONArray;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
+import com.ashwinchat.stockapp.batch.constant.BatchConstants;
 import com.ashwinchat.stockapp.batch.manager.IDownloadManager;
+import com.ashwinchat.stockapp.model.dao.IDao;
 import com.ashwinchat.stockapp.model.pk.StockPrimaryKey;
 import com.ashwinchat.stockapp.model.view.StockHistoryView;
+import com.ashwinchat.stockapp.model.view.StockScheduleView;
+import com.ashwinchat.stockapp.model.view.StockStagingView;
 
 public class GdaxDownloadManager implements IDownloadManager {
 
-    private static final String URL_FORMAT = "https://api.gdax.com/products/%s/candles?start=%s&end=%s&granularity=600";
+    private static final String URL_FORMAT = "https://api.gdax.com/products/%s/candles?start=%s&end=%s&granularity=86400";
     private static final String DOWNLOAD_ERROR = "Error in downloading. (name: %s, type: %s, start: %s, end: %s";
+    private static final DateTimeFormatter ISO_8601_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private Logger log = Logger.getLogger(GdaxDownloadManager.class.getName());
 
+    @Autowired
+    @Qualifier("genericDao")
+    private IDao<StockScheduleView> scheduleDao;
+
+    @Autowired
+    @Qualifier("genericDao")
+    private IDao<StockHistoryView> historyDao;
+
+    @Autowired
+    @Qualifier("genericDao")
+    private IDao<StockStagingView> stagingDao;
+
     @Override
-    public List<StockHistoryView> download(String stockType, String stockName, String start, String end)
+    @Transactional
+    public void execute(String stockName) throws Exception {
+        // 1. Query last date
+        StockScheduleView schedule = this.queryLastDate(stockName);
+        if (Objects.isNull(schedule)) {
+            return;
+        }
+
+        // 2. Download from last date to today in batches of 200 days and persist.
+        // Can't loop else we get a 429 error
+        LocalDateTime startDate = schedule.getNextStartDate();
+        if (Objects.isNull(startDate) || this.greaterThan(startDate, this.getStartOfToday())) {
+            return;
+        }
+        LocalDateTime endDate = this.downloadAndPersist(startDate, stockName);
+
+        // 3. update last date.
+        schedule.setNextStartDate(endDate.plusDays(1));
+        this.scheduleDao.save(schedule);
+    }
+
+    private LocalDateTime downloadAndPersist(LocalDateTime start, String stockName) throws Exception {
+        LocalDateTime startDate = start;
+        LocalDateTime endDate = this.add200DaysOrToday(startDate);
+
+        boolean shouldDownload = this.greaterThan(this.getStartOfToday(), startDate);
+        if (shouldDownload) {
+            List<StockHistoryView> views = this.download(BatchConstants.STOCK_TYPE_CRYPTO, stockName,
+                    this.convertToIso8601String(startDate), this.convertToIso8601String(endDate));
+
+            this.historyDao.saveAll(views);
+            List<StockStagingView> stagingViews = views.stream().map(this::mapToStagingView)
+                    .collect(Collectors.toList());
+
+            this.stagingDao.saveAll(stagingViews);
+        }
+
+        return endDate;
+    }
+
+    private StockStagingView mapToStagingView(StockHistoryView histView) {
+        StockStagingView stagingView = new StockStagingView();
+        stagingView.setProcFlag(BatchConstants.PROC_FLAG_NEW);
+        stagingView.setRetryCount(0);
+        StockPrimaryKey pk = new StockPrimaryKey();
+        pk.setEpochTime(histView.getPk().getEpochTime());
+        pk.setStockName(histView.getPk().getStockName());
+        pk.setStockTyp(BatchConstants.STOCK_TYPE_CRYPTO);
+        stagingView.setPk(pk);
+
+        return stagingView;
+    }
+
+    private String convertToIso8601String(LocalDateTime date) {
+        return date.format(ISO_8601_FORMAT);
+    }
+
+    private LocalDateTime add200DaysOrToday(LocalDateTime date) {
+        return this.greaterThan(date.plusDays(200), this.getStartOfToday()) ? this.getStartOfToday()
+                : date.plusDays(200);
+    }
+
+    private LocalDateTime getStartOfToday() {
+        return LocalDateTime.now().truncatedTo(ChronoUnit.DAYS);
+    }
+
+    private boolean greaterThan(LocalDateTime a, LocalDateTime b) {
+        return a.compareTo(b) > 0;
+    }
+
+    private StockScheduleView queryLastDate(String stockName) {
+        Query<StockScheduleView> query = this.scheduleDao.createQuery(
+                "from StockScheduleView where pk.stockName = :stockName and pk.stockTyp = :stockType and pk.jobTyp = :jobTyp");
+        query.setParameter("stockName", stockName);
+        query.setParameter("stockType", BatchConstants.STOCK_TYPE_CRYPTO);
+        query.setParameter("jobTyp", BatchConstants.JOB_TYPE_DOWNLOAD);
+        List<StockScheduleView> views = query.list();
+        if (CollectionUtils.isNotEmpty(views)) {
+            return views.get(0);
+        }
+        return null;
+    }
+
+    private List<StockHistoryView> download(String stockType, String stockName, String start, String end)
             throws Exception {
         try {
             String jsonString = this.downloadFromGdax(stockName, start, end);
