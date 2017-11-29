@@ -1,4 +1,4 @@
-package test.com.ashwinchat.stockapp.hibernate;
+package test.com.ashwinchat.stockapp.batch.manager;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
