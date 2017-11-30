@@ -16,6 +16,18 @@ repositories {
     jcenter()
 }
 
+jar {
+    manifest {
+        attributes 'Main-Class': 'com.ashwinchat.stockapp.main.Main'
+    }
+    
+    from {
+        configurations.compile.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+}
+
 dependencies {
     compile group: 'org.springframework', name: 'spring-context', version: '5.0.1.RELEASE'
     compile group: 'org.hibernate', name: 'hibernate-core', version: '5.2.12.Final'
