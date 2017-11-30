@@ -35,3 +35,14 @@ create table tb_stock_schedule (
     upd_on timestamp not null,
     primary key (stock_typ, stock_name, job_typ)
 );
+
+create table tb_system_config (
+    id bigserial not null primary key,
+    sys_cd varchar(30) not null,
+    key varchar(30) not null,
+    value varchar(30) not null,
+    cre_on timestamp not null,
+    upd_on timestamp not null
+);
+
+create index ix_system_config on tb_system_config(sys_cd, key);

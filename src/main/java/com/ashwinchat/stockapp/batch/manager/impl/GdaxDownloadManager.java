@@ -24,6 +24,7 @@ import org.jboss.logging.Logger;
 import org.json.JSONArray;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
 
 import com.ashwinchat.stockapp.batch.constant.BatchConstants;
 import com.ashwinchat.stockapp.batch.manager.IDownloadManager;
@@ -33,6 +34,7 @@ import com.ashwinchat.stockapp.model.view.StockHistoryView;
 import com.ashwinchat.stockapp.model.view.StockScheduleView;
 import com.ashwinchat.stockapp.model.view.StockStagingView;
 
+@Component("gdaxDownloadManager")
 public class GdaxDownloadManager implements IDownloadManager {
 
     private static final String URL_FORMAT = "https://api.gdax.com/products/%s/candles?start=%s&end=%s&granularity=86400";
