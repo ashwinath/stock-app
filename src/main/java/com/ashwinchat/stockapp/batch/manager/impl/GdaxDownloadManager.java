@@ -19,6 +19,7 @@ import javax.transaction.Transactional;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.query.Query;
 import org.jboss.logging.Logger;
 import org.json.JSONArray;
@@ -29,15 +30,17 @@ import org.springframework.stereotype.Component;
 import com.ashwinchat.stockapp.batch.constant.BatchConstants;
 import com.ashwinchat.stockapp.batch.manager.IDownloadManager;
 import com.ashwinchat.stockapp.model.dao.IDao;
+import com.ashwinchat.stockapp.model.dao.impl.ISystemConfigDao;
 import com.ashwinchat.stockapp.model.pk.StockPrimaryKey;
 import com.ashwinchat.stockapp.model.view.StockHistoryView;
 import com.ashwinchat.stockapp.model.view.StockScheduleView;
 import com.ashwinchat.stockapp.model.view.StockStagingView;
 
 @Component("gdaxDownloadManager")
+@Transactional
 public class GdaxDownloadManager implements IDownloadManager {
 
-    private static final String URL_FORMAT = "https://api.gdax.com/products/%s/candles?start=%s&end=%s&granularity=86400";
+    private String endpointUri;
     private static final String DOWNLOAD_ERROR = "Error in downloading. (name: %s, type: %s, start: %s, end: %s";
     private static final DateTimeFormatter ISO_8601_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private Logger log = Logger.getLogger(GdaxDownloadManager.class.getName());
@@ -54,9 +57,14 @@ public class GdaxDownloadManager implements IDownloadManager {
     @Qualifier("genericDao")
     private IDao<StockStagingView> stagingDao;
 
+    @Autowired
+    private ISystemConfigDao systemConfigDao;
+
     @Override
-    @Transactional
     public void execute(String stockName) throws Exception {
+        if (StringUtils.isBlank(this.endpointUri)) {
+            this.endpointUri = this.systemConfigDao.findValue(BatchConstants.GDAX_SYS_CD, BatchConstants.ENDPOINT_URI);
+        }
         // 1. Query last date
         StockScheduleView schedule = this.queryLastDate(stockName);
         if (Objects.isNull(schedule)) {
@@ -185,7 +193,7 @@ public class GdaxDownloadManager implements IDownloadManager {
     }
 
     private String downloadFromGdax(String stockName, String start, String end) throws IOException {
-        String downloadUrl = String.format(URL_FORMAT, stockName, start, end);
+        String downloadUrl = String.format(endpointUri, stockName, start, end);
         try (InputStream in = new URL(downloadUrl).openStream()) {
             return IOUtils.toString(in, StandardCharsets.UTF_8);
         }

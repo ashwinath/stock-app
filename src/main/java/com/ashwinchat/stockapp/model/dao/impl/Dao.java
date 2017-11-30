@@ -19,7 +19,7 @@ public class Dao<V extends DatabaseView> implements IDao<V> {
     private static final int INSERT_FLAG = 2;
 
     @Autowired
-    private SessionFactory sessionFactory;
+    protected SessionFactory sessionFactory;
 
     @Override
     public void save(V view) {

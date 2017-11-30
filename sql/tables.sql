@@ -40,7 +40,7 @@ create table tb_system_config (
     id bigserial not null primary key,
     sys_cd varchar(30) not null,
     key varchar(30) not null,
-    value varchar(30) not null,
+    value varchar(2000) not null,
     cre_on timestamp not null,
     upd_on timestamp not null
 );
