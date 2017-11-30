@@ -62,6 +62,8 @@ public class GdaxDownloadManager implements IDownloadManager {
 
     @Override
     public void execute(String stockName) throws Exception {
+        log.info(String
+            .format("Starting download of stocks from GDAX for type = %s, name = %s", BatchConstants.STOCK_TYPE_CRYPTO, stockName));
         if (StringUtils.isBlank(this.endpointUri)) {
             this.endpointUri = this.systemConfigDao.findValue(BatchConstants.GDAX_SYS_CD, BatchConstants.ENDPOINT_URI);
         }
@@ -82,6 +84,8 @@ public class GdaxDownloadManager implements IDownloadManager {
         // 3. update last date.
         schedule.setNextStartDate(endDate.plusDays(1));
         this.scheduleDao.save(schedule);
+        log.info(String
+            .format("Finished download of stocks from GDAX for type = %s, name = %s", BatchConstants.STOCK_TYPE_CRYPTO, stockName));
     }
 
     private LocalDateTime downloadAndPersist(LocalDateTime start, String stockName) throws Exception {
@@ -90,12 +94,14 @@ public class GdaxDownloadManager implements IDownloadManager {
 
         boolean shouldDownload = this.greaterThan(this.getStartOfToday(), startDate);
         if (shouldDownload) {
-            List<StockHistoryView> views = this.download(BatchConstants.STOCK_TYPE_CRYPTO, stockName,
-                    this.convertToIso8601String(startDate), this.convertToIso8601String(endDate));
+            List<StockHistoryView> views = this.download(BatchConstants.STOCK_TYPE_CRYPTO, stockName, this
+                .convertToIso8601String(startDate), this.convertToIso8601String(endDate));
 
             this.historyDao.saveAll(views);
-            List<StockStagingView> stagingViews = views.stream().map(this::mapToStagingView)
-                    .collect(Collectors.toList());
+            List<StockStagingView> stagingViews = views
+                .stream()
+                .map(this::mapToStagingView)
+                .collect(Collectors.toList());
 
             this.stagingDao.saveAll(stagingViews);
         }
@@ -134,8 +140,8 @@ public class GdaxDownloadManager implements IDownloadManager {
     }
 
     private StockScheduleView queryLastDate(String stockName) {
-        Query<StockScheduleView> query = this.scheduleDao.createQuery(
-                "from StockScheduleView where pk.stockName = :stockName and pk.stockTyp = :stockType and pk.jobTyp = :jobTyp");
+        Query<StockScheduleView> query = this.scheduleDao
+            .createQuery("from StockScheduleView where pk.stockName = :stockName and pk.stockTyp = :stockType and pk.jobTyp = :jobTyp");
         query.setParameter("stockName", stockName);
         query.setParameter("stockType", BatchConstants.STOCK_TYPE_CRYPTO);
         query.setParameter("jobTyp", BatchConstants.JOB_TYPE_DOWNLOAD);
@@ -176,8 +182,8 @@ public class GdaxDownloadManager implements IDownloadManager {
 
     private StockHistoryView mapToView(JSONArray eachDayRecords) {
         StockHistoryView view = new StockHistoryView();
-        view.setTime(
-                LocalDateTime.ofInstant(Instant.ofEpochSecond((int) eachDayRecords.get(0)), ZoneId.systemDefault()));
+        view.setTime(LocalDateTime
+            .ofInstant(Instant.ofEpochSecond((int) eachDayRecords.get(0)), ZoneId.systemDefault()));
         view.setLow(new BigDecimal(eachDayRecords.get(1).toString()));
         view.setHigh(new BigDecimal(eachDayRecords.get(2).toString()));
         view.setOpen(new BigDecimal(eachDayRecords.get(3).toString()));

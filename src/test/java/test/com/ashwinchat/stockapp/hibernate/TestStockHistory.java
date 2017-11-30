@@ -30,8 +30,8 @@ public class TestStockHistory extends HibernateCrudTest {
         StockHistoryView view = insertRecord();
         view.setHigh(new BigDecimal(123));
         this.stockHistoryDao.update(view);
-        Query<StockHistoryView> query = this.stockHistoryDao.createQuery(
-                "from StockHistoryView where pk.stockTyp = :stockTyp and pk.stockName = :stockName and pk.epochTime = :epochTime");
+        Query<StockHistoryView> query = this.stockHistoryDao
+            .createQuery("from StockHistoryView where pk.stockTyp = :stockTyp and pk.stockName = :stockName and pk.epochTime = :epochTime");
         query.setParameter("stockTyp", this.stockTyp);
         query.setParameter("stockName", this.stockName);
         query.setParameter("epochTime", this.now.atZone(ZoneId.systemDefault()).toEpochSecond());
@@ -44,8 +44,8 @@ public class TestStockHistory extends HibernateCrudTest {
     @Test
     public void testInsert() {
         this.insertRecord();
-        Query<StockHistoryView> query = this.stockHistoryDao.createQuery(
-                "from StockHistoryView where pk.stockTyp = :stockTyp and pk.stockName = :stockName and pk.epochTime = :epochTime");
+        Query<StockHistoryView> query = this.stockHistoryDao
+            .createQuery("from StockHistoryView where pk.stockTyp = :stockTyp and pk.stockName = :stockName and pk.epochTime = :epochTime");
         query.setParameter("stockTyp", this.stockTyp);
         query.setParameter("stockName", this.stockName);
         query.setParameter("epochTime", this.now.atZone(ZoneId.systemDefault()).toEpochSecond());
@@ -56,8 +56,8 @@ public class TestStockHistory extends HibernateCrudTest {
     @Override
     @Test
     public void queryNonExistent() {
-        Query<StockHistoryView> query = this.stockHistoryDao.createQuery(
-                "from StockHistoryView where pk.stockTyp = :stockTyp and pk.stockName = :stockName and pk.epochTime = :epochTime");
+        Query<StockHistoryView> query = this.stockHistoryDao
+            .createQuery("from StockHistoryView where pk.stockTyp = :stockTyp and pk.stockName = :stockName and pk.epochTime = :epochTime");
         query.setParameter("stockTyp", "lul");
         query.setParameter("stockName", "lul");
         query.setParameter("epochTime", this.now.atZone(ZoneId.systemDefault()).toEpochSecond());

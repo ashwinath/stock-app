@@ -1,6 +1,7 @@
 package com.ashwinchat.stockapp.model.pk;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
@@ -39,6 +40,23 @@ public class StockPrimaryKey implements Serializable {
 
     public void setEpochTime(long epochTime) {
         this.epochTime = epochTime;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (Objects.nonNull(obj) && obj instanceof StockPrimaryKey) {
+            StockPrimaryKey otherObj = (StockPrimaryKey) obj;
+
+            return otherObj.getEpochTime() == this.getEpochTime()
+                    && Objects.equals(otherObj.getStockName(), this.getStockName())
+                    && Objects.equals(otherObj.getStockTyp(), this.getStockTyp());
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.epochTime, this.stockName, this.stockTyp);
     }
 
 }

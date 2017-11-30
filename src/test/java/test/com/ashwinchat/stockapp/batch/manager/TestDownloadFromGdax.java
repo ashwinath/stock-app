@@ -80,7 +80,7 @@ public class TestDownloadFromGdax {
 
     private void assertHistTable() {
         Query<StockHistoryView> query = this.historyDao
-                .createQuery("from StockHistoryView where pk.stockTyp = :stockTyp and pk.stockName = :stockName");
+            .createQuery("from StockHistoryView where pk.stockTyp = :stockTyp and pk.stockName = :stockName");
         query.setParameter("stockTyp", BatchConstants.STOCK_TYPE_CRYPTO);
         query.setParameter("stockName", COIN_TYPE);
         List<StockHistoryView> histViews = query.list();

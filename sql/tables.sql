@@ -46,3 +46,14 @@ create table tb_system_config (
 );
 
 create index ix_system_config on tb_system_config(sys_cd, key);
+
+create table tb_job_config (
+    job_name varchar(1000) not null primary key,
+    job_type varchar(30) not null,
+    stock_name varchar(10) not null,
+    service varchar(30) not null,
+    interval smallint not null,
+    stat varchar(1) not null,
+    cre_on timestamp not null,
+    upd_on timestamp not null
+);

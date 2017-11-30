@@ -22,6 +22,7 @@ dependencies {
     compile group: 'org.quartz-scheduler', name: 'quartz', version: '2.3.0'
     compile group: 'org.springframework', name: 'spring-jdbc', version: '5.0.1.RELEASE'
     compile group: 'org.springframework', name: 'spring-orm', version: '5.0.1.RELEASE'
+    compile group: 'org.springframework', name: 'spring-context-support', version: '5.0.2.RELEASE'
     compile group: 'org.postgresql', name: 'postgresql', version: '42.1.4'
     compile group: 'commons-io', name: 'commons-io', version: '2.6'
     compile group: 'org.json', name: 'json', version: '20171018'

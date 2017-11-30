@@ -11,8 +11,9 @@ public class SystemConfigDao extends Dao<SystemConfigView> implements ISystemCon
     @SuppressWarnings("unchecked")
     @Override
     public String findValue(String sysCd, String key) {
-        Query<String> query = this.sessionFactory.getCurrentSession()
-                .createQuery("select value from SystemConfigView where sysCd = :sysCd and key = :key");
+        Query<String> query = this.sessionFactory
+            .getCurrentSession()
+            .createQuery("select value from SystemConfigView where sysCd = :sysCd and key = :key");
         query.setParameter("sysCd", sysCd);
         query.setParameter("key", key);
         return query.uniqueResult();
