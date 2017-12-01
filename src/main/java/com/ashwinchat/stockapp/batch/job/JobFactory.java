@@ -1,6 +1,8 @@
 package com.ashwinchat.stockapp.batch.job;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.annotation.PostConstruct;
 import javax.transaction.Transactional;
@@ -66,7 +68,9 @@ public class JobFactory {
                 .repeatForever())
             .build();
 
-        this.scheduler.scheduleJob(job, trigger);
+        Set<Trigger> triggerSet = new HashSet<>();
+        triggerSet.add(trigger);
+        this.scheduler.scheduleJob(job, triggerSet, true);
     }
 
     private List<JobConfigView> getAllActiveJobs(String service) {

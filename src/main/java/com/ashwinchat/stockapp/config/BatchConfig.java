@@ -1,6 +1,6 @@
 package com.ashwinchat.stockapp.config;
 
-import java.util.logging.Logger;
+import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -23,7 +23,8 @@ public class BatchConfig {
     @Autowired
     private PlatformTransactionManager transactionManager;
 
-    private Logger log = Logger.getLogger(BatchConfig.class.getName());
+    @Autowired
+    private DataSource dataSource;
 
     @Bean("quartzScheduler")
     public SchedulerFactoryBean quartzScheduler() {
@@ -35,6 +36,8 @@ public class BatchConfig {
         quartzScheduler.setJobFactory(jobFactory);
         quartzScheduler.setConfigLocation(new ClassPathResource("/quartz.properties"));
         quartzScheduler.setSchedulerName("StockScheduler");
+        quartzScheduler.setDataSource(dataSource);
+        quartzScheduler.setWaitForJobsToCompleteOnShutdown(true);
 
         return quartzScheduler;
     }

@@ -21,8 +21,9 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.query.Query;
-import org.jboss.logging.Logger;
 import org.json.JSONArray;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -43,7 +44,7 @@ public class GdaxDownloadManager implements IDownloadManager {
     private String endpointUri;
     private static final String DOWNLOAD_ERROR = "Error in downloading. (name: %s, type: %s, start: %s, end: %s";
     private static final DateTimeFormatter ISO_8601_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    private Logger log = Logger.getLogger(GdaxDownloadManager.class.getName());
+    private Logger log = LoggerFactory.getLogger(GdaxDownloadManager.class.getName());
 
     @Autowired
     @Qualifier("genericDao")

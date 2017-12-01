@@ -1,11 +1,11 @@
 package com.ashwinchat.stockapp.batch.job;
 
-import java.util.logging.Logger;
-
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
@@ -18,7 +18,7 @@ public class DownloadCryptoJob implements Job {
     @Qualifier("gdaxDownloadManager")
     private IDownloadManager gdaxDownloadManager;
 
-    private Logger log = Logger.getLogger(JobFactory.class.getName());
+    private Logger log = LoggerFactory.getLogger(JobFactory.class.getName());
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
@@ -26,7 +26,7 @@ public class DownloadCryptoJob implements Job {
         try {
             this.gdaxDownloadManager.execute(stockName);
         } catch (Exception e) {
-            log.severe(ExceptionUtils.getStackTrace(e));
+            log.error(ExceptionUtils.getStackTrace(e));
             throw new JobExecutionException(e);
         }
     }
