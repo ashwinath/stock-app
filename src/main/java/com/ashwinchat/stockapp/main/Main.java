@@ -5,7 +5,6 @@ import java.util.logging.Logger;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
-import org.quartz.impl.StdSchedulerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
@@ -20,8 +19,7 @@ public class Main {
         ApplicationContext context = new AnnotationConfigApplicationContext(BatchConfig.class, HibernateConfig.class);
         JobFactory jobFactory = context.getBean(JobFactory.class);
         try {
-            jobFactory.createAllCryptoJob();
-            Scheduler scheduler = StdSchedulerFactory.getDefaultScheduler();
+            Scheduler scheduler = jobFactory.createAllCryptoJob();
             scheduler.start();
         } catch (SchedulerException e) {
             log.severe(ExceptionUtils.getStackTrace(e));

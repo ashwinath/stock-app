@@ -1,11 +1,8 @@
 package com.ashwinchat.stockapp.config;
 
-import java.io.IOException;
-import java.util.Properties;
 import java.util.logging.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.PropertiesFactoryBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -36,22 +33,10 @@ public class BatchConfig {
         AutowiringSpringBeanJobFactory jobFactory = new AutowiringSpringBeanJobFactory();
         jobFactory.setApplicationContext(this.applicationContext);
         quartzScheduler.setJobFactory(jobFactory);
+        quartzScheduler.setConfigLocation(new ClassPathResource("/quartz.properties"));
+        quartzScheduler.setSchedulerName("StockScheduler");
 
         return quartzScheduler;
     }
 
-    @Bean
-    public Properties quartzProperties() {
-        PropertiesFactoryBean propertiesFactoryBean = new PropertiesFactoryBean();
-        propertiesFactoryBean.setLocation(new ClassPathResource("/quartz.properties"));
-        Properties properties = null;
-        try {
-            propertiesFactoryBean.afterPropertiesSet();
-            properties = propertiesFactoryBean.getObject();
-        } catch (IOException e) {
-            log.warning("Cannot load quartz.properties.");
-        }
-
-        return properties;
-    }
 }

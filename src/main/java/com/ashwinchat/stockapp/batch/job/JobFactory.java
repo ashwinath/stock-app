@@ -41,11 +41,12 @@ public class JobFactory {
         this.scheduler = schedulerFactoryBean.getScheduler();
     }
 
-    public void createAllCryptoJob() throws SchedulerException {
+    public Scheduler createAllCryptoJob() throws SchedulerException {
         List<JobConfigView> configs = this.getAllActiveJobs(BatchConstants.GDAX_SYS_CD);
         for (JobConfigView config : configs) {
             this.createDownloadCryptoJob(config);
         }
+        return this.scheduler;
     }
 
     private void createDownloadCryptoJob(JobConfigView configView) throws SchedulerException {
