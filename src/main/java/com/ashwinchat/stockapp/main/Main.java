@@ -7,7 +7,6 @@ import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.impl.StdSchedulerFactory;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import com.ashwinchat.stockapp.batch.job.JobFactory;
@@ -26,8 +25,6 @@ public class Main {
             scheduler.start();
         } catch (SchedulerException e) {
             log.severe(ExceptionUtils.getStackTrace(e));
-        } finally {
-            ((ConfigurableApplicationContext) context).close();
         }
     }
 
