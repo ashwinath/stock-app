@@ -13,19 +13,6 @@ create table tb_stock_hist (
     primary key (stock_typ, stock_name, epoch_time)
 );
 
-create table tb_stock_staging (
-    stock_typ varchar(10) not null,
-    stock_name varchar(10) not null,
-    epoch_time bigint not null,
-    proc_flg varchar(1) not null,
-    proc_on timestamp,
-    err_msg varchar(1000),
-    retry_cnt smallint not null,
-    cre_on timestamp not null,
-    upd_on timestamp not null,
-    primary key (stock_typ, stock_name, epoch_time)
-);
-
 create table tb_stock_schedule (
     stock_typ varchar(10) not null,
     stock_name varchar(10) not null,
@@ -56,4 +43,13 @@ create table tb_job_config (
     stat varchar(1) not null,
     cre_on timestamp not null,
     upd_on timestamp not null
+);
+
+CREATE TABLE tb_strat_macd (
+    stock_typ varchar(10) not null,
+    stock_name varchar(10) not null,
+    epoch_time bigint not null,
+    macd decimal(100,4) not null,
+    sig decimal(100,4) not null,
+    primary key (stock_typ, stock_name, epoch_time)
 );

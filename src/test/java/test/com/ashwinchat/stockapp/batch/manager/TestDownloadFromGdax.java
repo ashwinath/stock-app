@@ -24,9 +24,11 @@ import com.ashwinchat.stockapp.batch.manager.IDownloadManager;
 import com.ashwinchat.stockapp.config.BatchConfig;
 import com.ashwinchat.stockapp.config.HibernateConfig;
 import com.ashwinchat.stockapp.model.dao.IDao;
+import com.ashwinchat.stockapp.model.dao.ISystemConfigDao;
 import com.ashwinchat.stockapp.model.pk.StockSchedulePrimaryKey;
 import com.ashwinchat.stockapp.model.view.StockHistoryView;
 import com.ashwinchat.stockapp.model.view.StockScheduleView;
+import com.ashwinchat.stockapp.model.view.SystemConfigView;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = { BatchConfig.class, HibernateConfig.class })
@@ -36,6 +38,7 @@ public class TestDownloadFromGdax {
     private static final String COIN_TYPE = "LTC-BTC";
     private static final LocalDateTime YESTERDAY = LocalDateTime.now().minusDays(1).truncatedTo(ChronoUnit.DAYS);
     private StockScheduleView scheduleView;
+    private static int NUMBER_OF_SECONDS_FOR_200_RECORDS_IN_ONE_DAY = 432;
 
     @Autowired
     @Qualifier("gdaxDownloadManager")
@@ -49,9 +52,32 @@ public class TestDownloadFromGdax {
     @Qualifier("genericDao")
     private IDao<StockScheduleView> scheduleDao;
 
+    @Autowired
+    private ISystemConfigDao systemConfigDao;
+
     @Before
     public void init() {
         this.insertConfig();
+        this.setGranularity();
+    }
+
+    private void setGranularity() {
+        Query<SystemConfigView> query = this.systemConfigDao
+            .createQuery("from SystemConfigView where sysCd = :sysCd and key = :key");
+        query.setParameter("sysCd", BatchConstants.GDAX_SYS_CD);
+        query.setParameter("key", BatchConstants.GRANULARITY_KEY);
+        SystemConfigView sysConfig = query.uniqueResult();
+        if (Objects.nonNull(sysConfig)) {
+            sysConfig.setValue("" + NUMBER_OF_SECONDS_FOR_200_RECORDS_IN_ONE_DAY);
+            this.systemConfigDao.update(sysConfig);
+        } else {
+            sysConfig = new SystemConfigView();
+            sysConfig.setId(10000000);
+            sysConfig.setSysCd(BatchConstants.GDAX_SYS_CD);
+            sysConfig.setKey(BatchConstants.GRANULARITY_KEY);
+            sysConfig.setValue("" + NUMBER_OF_SECONDS_FOR_200_RECORDS_IN_ONE_DAY);
+            this.systemConfigDao.save(sysConfig);
+        }
     }
 
     @After

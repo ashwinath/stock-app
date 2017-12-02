@@ -9,11 +9,9 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import javax.transaction.Transactional;
 
@@ -31,19 +29,18 @@ import org.springframework.stereotype.Component;
 import com.ashwinchat.stockapp.batch.constant.BatchConstants;
 import com.ashwinchat.stockapp.batch.manager.IDownloadManager;
 import com.ashwinchat.stockapp.model.dao.IDao;
-import com.ashwinchat.stockapp.model.dao.impl.ISystemConfigDao;
+import com.ashwinchat.stockapp.model.dao.ISystemConfigDao;
 import com.ashwinchat.stockapp.model.pk.StockPrimaryKey;
 import com.ashwinchat.stockapp.model.view.StockHistoryView;
 import com.ashwinchat.stockapp.model.view.StockScheduleView;
-import com.ashwinchat.stockapp.model.view.StockStagingView;
 
 @Component("gdaxDownloadManager")
 @Transactional
 public class GdaxDownloadManager implements IDownloadManager {
 
+    private static final int MAX_NUMBER_OF_RECORDS = 200;
     private String endpointUri;
     private static final String DOWNLOAD_ERROR = "Error in downloading. (name: %s, type: %s, start: %s, end: %s";
-    private static final DateTimeFormatter ISO_8601_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private Logger log = LoggerFactory.getLogger(GdaxDownloadManager.class.getName());
 
     @Autowired
@@ -55,19 +52,18 @@ public class GdaxDownloadManager implements IDownloadManager {
     private IDao<StockHistoryView> historyDao;
 
     @Autowired
-    @Qualifier("genericDao")
-    private IDao<StockStagingView> stagingDao;
-
-    @Autowired
     private ISystemConfigDao systemConfigDao;
 
     @Override
     public void execute(String stockName) throws Exception {
+        int granularity = this.getGranularity();
         log.info(String
             .format("Starting download of stocks from GDAX for type = %s, name = %s", BatchConstants.STOCK_TYPE_CRYPTO, stockName));
         if (StringUtils.isBlank(this.endpointUri)) {
-            this.endpointUri = this.systemConfigDao.findValue(BatchConstants.GDAX_SYS_CD, BatchConstants.ENDPOINT_URI);
+            this.endpointUri = this.systemConfigDao.findValue(BatchConstants.GDAX_SYS_CD, BatchConstants.ENDPOINT_URI)
+                    + granularity;
         }
+
         // 1. Query last date
         StockScheduleView schedule = this.queryLastDate(stockName);
         if (Objects.isNull(schedule)) {
@@ -77,63 +73,55 @@ public class GdaxDownloadManager implements IDownloadManager {
         // 2. Download from last date to today in batches of 200 days and persist.
         // Can't loop else we get a 429 error
         LocalDateTime startDate = schedule.getNextStartDate();
-        if (Objects.isNull(startDate) || this.greaterThan(startDate, this.getStartOfToday())) {
+        // must be GMT, so we minus 8 hrs.
+        LocalDateTime now = LocalDateTime.now().minusHours(8);
+        if (Objects.isNull(startDate) || this.greaterThan(startDate, now)) {
             return;
         }
-        LocalDateTime endDate = this.downloadAndPersist(startDate, stockName);
+        LocalDateTime endDate = this.downloadAndPersist(now, startDate, stockName, granularity);
 
         // 3. update last date.
-        schedule.setNextStartDate(endDate.plusDays(1));
-        this.scheduleDao.save(schedule);
+        schedule.setNextStartDate(endDate);
+        this.scheduleDao.update(schedule);
         log.info(String
             .format("Finished download of stocks from GDAX for type = %s, name = %s", BatchConstants.STOCK_TYPE_CRYPTO, stockName));
     }
 
-    private LocalDateTime downloadAndPersist(LocalDateTime start, String stockName) throws Exception {
+    private LocalDateTime downloadAndPersist(LocalDateTime now, LocalDateTime start, String stockName, int granularity)
+            throws Exception {
         LocalDateTime startDate = start;
-        LocalDateTime endDate = this.add200DaysOrToday(startDate);
+        LocalDateTime endDate = this.getEndDate(now, startDate, granularity);
 
-        boolean shouldDownload = this.greaterThan(this.getStartOfToday(), startDate);
+        boolean shouldDownload = this.greaterThan(now, startDate);
         if (shouldDownload) {
             List<StockHistoryView> views = this.download(BatchConstants.STOCK_TYPE_CRYPTO, stockName, this
                 .convertToIso8601String(startDate), this.convertToIso8601String(endDate));
 
             this.historyDao.saveAll(views);
-            List<StockStagingView> stagingViews = views
-                .stream()
-                .map(this::mapToStagingView)
-                .collect(Collectors.toList());
-
-            this.stagingDao.saveAll(stagingViews);
         }
 
         return endDate;
     }
 
-    private StockStagingView mapToStagingView(StockHistoryView histView) {
-        StockStagingView stagingView = new StockStagingView();
-        stagingView.setProcFlag(BatchConstants.PROC_FLAG_NEW);
-        stagingView.setRetryCount(0);
-        StockPrimaryKey pk = new StockPrimaryKey();
-        pk.setEpochTime(histView.getPk().getEpochTime());
-        pk.setStockName(histView.getPk().getStockName());
-        pk.setStockTyp(BatchConstants.STOCK_TYPE_CRYPTO);
-        stagingView.setPk(pk);
-
-        return stagingView;
+    private int getGranularity() {
+        try {
+            String granularityString = this.systemConfigDao
+                .findValue(BatchConstants.GDAX_SYS_CD, BatchConstants.GRANULARITY_KEY);
+            return Integer.parseInt(granularityString);
+        } catch (NumberFormatException e) {
+            log.warn(String
+                .format("Please put an integer under SYS_CD = %s, KEY = %s. Defaulting to 200 records in one day.", BatchConstants.GDAX_SYS_CD, BatchConstants.GRANULARITY_KEY));
+            return 432;
+        }
     }
 
     private String convertToIso8601String(LocalDateTime date) {
-        return date.format(ISO_8601_FORMAT);
+        return date.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
     }
 
-    private LocalDateTime add200DaysOrToday(LocalDateTime date) {
-        return this.greaterThan(date.plusDays(200), this.getStartOfToday()) ? this.getStartOfToday()
-                : date.plusDays(200);
-    }
-
-    private LocalDateTime getStartOfToday() {
-        return LocalDateTime.now().truncatedTo(ChronoUnit.DAYS);
+    private LocalDateTime getEndDate(LocalDateTime now, LocalDateTime date, int granularityInSeconds) {
+        LocalDateTime nextDate = date.plusSeconds(granularityInSeconds * MAX_NUMBER_OF_RECORDS);
+        return this.greaterThan(nextDate, now) ? now : nextDate;
     }
 
     private boolean greaterThan(LocalDateTime a, LocalDateTime b) {
@@ -201,6 +189,10 @@ public class GdaxDownloadManager implements IDownloadManager {
 
     private String downloadFromGdax(String stockName, String start, String end) throws IOException {
         String downloadUrl = String.format(endpointUri, stockName, start, end);
+        if (log.isDebugEnabled()) {
+            log.debug("Endpoint Url: " + downloadUrl);
+        }
+
         try (InputStream in = new URL(downloadUrl).openStream()) {
             return IOUtils.toString(in, StandardCharsets.UTF_8);
         }

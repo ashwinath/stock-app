@@ -64,7 +64,7 @@ public class JobFactory {
             .startNow()
             .withSchedule(SimpleScheduleBuilder
                 .simpleSchedule()
-                .withIntervalInMinutes(configView.getInterval())
+                .withIntervalInSeconds(configView.getInterval())
                 .repeatForever())
             .build();
 

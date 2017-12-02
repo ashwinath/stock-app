@@ -70,8 +70,8 @@ public class Dao<V extends DatabaseView> implements IDao<V> {
             timeStamps = new EmbeddableTimeStamps();
             timeStamps.setUpdatedOn(LocalDateTime.now());
             timeStamps.setCreatedOn(LocalDateTime.now());
+            view.setTimeStamps(timeStamps);
         }
-        view.setTimeStamps(timeStamps);
     }
 
     @SuppressWarnings("unchecked")

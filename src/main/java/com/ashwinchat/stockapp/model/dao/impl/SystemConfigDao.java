@@ -3,6 +3,7 @@ package com.ashwinchat.stockapp.model.dao.impl;
 import org.hibernate.query.Query;
 import org.springframework.stereotype.Repository;
 
+import com.ashwinchat.stockapp.model.dao.ISystemConfigDao;
 import com.ashwinchat.stockapp.model.view.SystemConfigView;
 
 @Repository
