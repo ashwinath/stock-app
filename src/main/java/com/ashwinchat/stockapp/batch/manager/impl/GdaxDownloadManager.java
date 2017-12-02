@@ -56,7 +56,7 @@ public class GdaxDownloadManager implements IDownloadManager {
 
     @Override
     public void execute(String stockName) throws Exception {
-        int granularity = this.getGranularity();
+        long granularity = this.getGranularity();
         log.info(String
             .format("Starting download of stocks from GDAX for type = %s, name = %s", BatchConstants.STOCK_TYPE_CRYPTO, stockName));
         if (StringUtils.isBlank(this.endpointUri)) {
@@ -73,26 +73,42 @@ public class GdaxDownloadManager implements IDownloadManager {
         // 2. Download from last date to today in batches of 200 days and persist.
         // Can't loop else we get a 429 error
         LocalDateTime startDate = schedule.getNextStartDate();
-        // must be GMT, so we minus 8 hrs.
-        LocalDateTime now = LocalDateTime.now().minusHours(8);
+        LocalDateTime now = LocalDateTime.now();
         if (Objects.isNull(startDate) || this.greaterThan(startDate, now)) {
             return;
         }
         LocalDateTime endDate = this.downloadAndPersist(now, startDate, stockName, granularity);
 
-        // 3. update last date.
-        schedule.setNextStartDate(endDate);
+        // 3. update last date. Singapore Time
+        schedule.setNextStartDate(this.truncateToNearestGranularity(endDate, granularity).plusSeconds(granularity));
         this.scheduleDao.update(schedule);
         log.info(String
             .format("Finished download of stocks from GDAX for type = %s, name = %s", BatchConstants.STOCK_TYPE_CRYPTO, stockName));
     }
 
-    private LocalDateTime downloadAndPersist(LocalDateTime now, LocalDateTime start, String stockName, int granularity)
-            throws Exception {
-        LocalDateTime startDate = start;
-        LocalDateTime endDate = this.getEndDate(now, startDate, granularity);
+    private LocalDateTime truncateToNearestGranularity(LocalDateTime endDate, long granularity) {
+        long epochTime = endDate.atZone(ZoneId.systemDefault()).toEpochSecond();
+        long roundedOff = epochTime - epochTime % granularity;
+        return LocalDateTime.ofInstant(Instant.ofEpochSecond(roundedOff), ZoneId.systemDefault());
+    }
 
-        boolean shouldDownload = this.greaterThan(now, startDate);
+    /**
+     * Download based on GMT time. Not SG time. Returns Singapore time;
+     * 
+     * @param now
+     * @param start
+     * @param stockName
+     * @param granularity
+     * @return
+     * @throws Exception
+     */
+    private LocalDateTime downloadAndPersist(LocalDateTime now, LocalDateTime start, String stockName, long granularity)
+            throws Exception {
+        LocalDateTime nowGmt = now.minusHours(8);
+        LocalDateTime startDate = start.minusHours(8);
+        LocalDateTime endDate = this.getEndDate(nowGmt, startDate, granularity);
+
+        boolean shouldDownload = this.greaterThan(nowGmt, startDate);
         if (shouldDownload) {
             List<StockHistoryView> views = this.download(BatchConstants.STOCK_TYPE_CRYPTO, stockName, this
                 .convertToIso8601String(startDate), this.convertToIso8601String(endDate));
@@ -100,14 +116,14 @@ public class GdaxDownloadManager implements IDownloadManager {
             this.historyDao.saveAll(views);
         }
 
-        return endDate;
+        return endDate.plusHours(8);
     }
 
-    private int getGranularity() {
+    private long getGranularity() {
         try {
             String granularityString = this.systemConfigDao
                 .findValue(BatchConstants.GDAX_SYS_CD, BatchConstants.GRANULARITY_KEY);
-            return Integer.parseInt(granularityString);
+            return Long.parseLong(granularityString);
         } catch (NumberFormatException e) {
             log.warn(String
                 .format("Please put an integer under SYS_CD = %s, KEY = %s. Defaulting to 200 records in one day.", BatchConstants.GDAX_SYS_CD, BatchConstants.GRANULARITY_KEY));
@@ -119,7 +135,7 @@ public class GdaxDownloadManager implements IDownloadManager {
         return date.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
     }
 
-    private LocalDateTime getEndDate(LocalDateTime now, LocalDateTime date, int granularityInSeconds) {
+    private LocalDateTime getEndDate(LocalDateTime now, LocalDateTime date, long granularityInSeconds) {
         LocalDateTime nextDate = date.plusSeconds(granularityInSeconds * MAX_NUMBER_OF_RECORDS);
         return this.greaterThan(nextDate, now) ? now : nextDate;
     }
