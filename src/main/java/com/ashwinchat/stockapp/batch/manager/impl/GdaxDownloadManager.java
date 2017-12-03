@@ -136,8 +136,7 @@ public class GdaxDownloadManager implements IDownloadManager {
     }
 
     private LocalDateTime getEndDate(LocalDateTime now, LocalDateTime date, long granularityInSeconds) {
-        LocalDateTime nextDate = date.plusSeconds(granularityInSeconds * MAX_NUMBER_OF_RECORDS);
-        return this.greaterThan(nextDate, now) ? now : nextDate;
+        return date.plusSeconds(granularityInSeconds * MAX_NUMBER_OF_RECORDS);
     }
 
     private boolean greaterThan(LocalDateTime a, LocalDateTime b) {
