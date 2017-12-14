@@ -1,5 +1,8 @@
 # stock-app
-Something to analyse stocks/crypto
+Something to analyse stocks/crypto.
+
+## Todo
+* add stochastic rsi analysis
 
 ## License
 

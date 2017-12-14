@@ -40,7 +40,7 @@ public class GdaxDownloadManager implements IDownloadManager {
 
     private static final int MAX_NUMBER_OF_RECORDS = 200;
     private String endpointUri;
-    private static final String DOWNLOAD_ERROR = "Error in downloading. (name: %s, type: %s, start: %s, end: %s";
+    private static final String DOWNLOAD_ERROR = "Error in downloading. (name: %s, type: %s, start: %s, end: %s)";
     private Logger log = LoggerFactory.getLogger(GdaxDownloadManager.class.getName());
 
     @Autowired
@@ -57,8 +57,10 @@ public class GdaxDownloadManager implements IDownloadManager {
     @Override
     public void execute(String stockName) throws Exception {
         long granularity = this.getGranularity();
-        log.info(String
-            .format("Starting download of stocks from GDAX for type = %s, name = %s", BatchConstants.STOCK_TYPE_CRYPTO, stockName));
+        if (log.isInfoEnabled()) {
+            log.info(String
+                .format("Starting download of stocks from GDAX for type = %s, name = %s", BatchConstants.STOCK_TYPE_CRYPTO, stockName));
+        }
         if (StringUtils.isBlank(this.endpointUri)) {
             this.endpointUri = this.systemConfigDao.findValue(BatchConstants.GDAX_SYS_CD, BatchConstants.ENDPOINT_URI)
                     + granularity;
@@ -70,7 +72,7 @@ public class GdaxDownloadManager implements IDownloadManager {
             return;
         }
 
-        // 2. Download from last date to today in batches of 200 days and persist.
+        // 2. Download from last date to today in batches of 200 records
         // Can't loop else we get a 429 error
         LocalDateTime startDate = schedule.getNextStartDate();
         LocalDateTime now = LocalDateTime.now();
@@ -80,10 +82,12 @@ public class GdaxDownloadManager implements IDownloadManager {
         LocalDateTime endDate = this.downloadAndPersist(now, startDate, stockName, granularity);
 
         // 3. update last date. Singapore Time
-        schedule.setNextStartDate(this.truncateToNearestGranularity(endDate, granularity).plusSeconds(granularity));
+        schedule.setNextStartDate(this.truncateToNearestGranularity(endDate, granularity));
         this.scheduleDao.update(schedule);
-        log.info(String
-            .format("Finished download of stocks from GDAX for type = %s, name = %s", BatchConstants.STOCK_TYPE_CRYPTO, stockName));
+        if (log.isInfoEnabled()) {
+            log.info(String
+                .format("Finished download of stocks from GDAX for type = %s, name = %s", BatchConstants.STOCK_TYPE_CRYPTO, stockName));
+        }
     }
 
     private LocalDateTime truncateToNearestGranularity(LocalDateTime endDate, long granularity) {
@@ -106,7 +110,7 @@ public class GdaxDownloadManager implements IDownloadManager {
             throws Exception {
         LocalDateTime nowGmt = now.minusHours(8);
         LocalDateTime startDate = start.minusHours(8);
-        LocalDateTime endDate = this.getEndDate(nowGmt, startDate, granularity);
+        LocalDateTime endDate = this.getEndDate(startDate, granularity);
 
         boolean shouldDownload = this.greaterThan(nowGmt, startDate);
         if (shouldDownload) {
@@ -135,7 +139,7 @@ public class GdaxDownloadManager implements IDownloadManager {
         return date.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
     }
 
-    private LocalDateTime getEndDate(LocalDateTime now, LocalDateTime date, long granularityInSeconds) {
+    private LocalDateTime getEndDate(LocalDateTime date, long granularityInSeconds) {
         return date.plusSeconds(granularityInSeconds * MAX_NUMBER_OF_RECORDS);
     }
 
