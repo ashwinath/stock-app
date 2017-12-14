@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @Configuration
 @EnableTransactionManagement
 @ComponentScan(basePackages = { "com.ashwinchat.stockapp.model" })
-@PropertySource(value = { "classpath:${stock.env:dev}.properties" })
+@PropertySource(value = { "classpath:${env:dev}.properties" })
 public class HibernateConfig {
 
     @Autowired
