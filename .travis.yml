@@ -7,3 +7,5 @@ before_script:
   - sh scripts/tables_init.sh
 jdk:
   - oraclejdk8
+env:
+  - env=travis
