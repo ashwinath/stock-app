@@ -24,3 +24,6 @@ hs_err_pid*
 .gradle/
 build/
 bin/
+
+# needs the gradle jar
+!gradle-wrapper.jar
