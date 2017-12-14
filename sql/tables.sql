@@ -44,12 +44,3 @@ create table tb_job_config (
     cre_on timestamp not null,
     upd_on timestamp not null
 );
-
-CREATE TABLE tb_strat_macd (
-    stock_typ varchar(10) not null,
-    stock_name varchar(10) not null,
-    epoch_time bigint not null,
-    macd decimal(100,4) not null,
-    sig decimal(100,4) not null,
-    primary key (stock_typ, stock_name, epoch_time)
-);
