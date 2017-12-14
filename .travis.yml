@@ -1,0 +1,11 @@
+language: java
+service:
+  - postgresql
+addons:
+  postgresql: "9.6"
+before_script:
+  - sh scripts/tables_init.sh
+jdk:
+  - oraclejdk8
+env:
+  - stock.env=travis
