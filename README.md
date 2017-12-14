@@ -1,4 +1,6 @@
-# stock-app
+# Stock Analyser
+[![Build Status](https://travis-ci.org/ashwinath/stock-app.svg?branch=master)](https://travis-ci.org/ashwinath/stock-app)
+
 Something to analyse stocks/crypto.
 
 ## Todo
