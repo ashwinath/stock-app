@@ -52,21 +52,8 @@ create table tb_stochastic_rsi (
     epoch_time bigint not null,
     interval smallint not null,
     k decimal(10, 4) not null,
-    d decimal(10, 4) not null,
+    d decimal(10, 4),
     cre_on timestamp not null,
     upd_on timestamp not null,
     primary key (stock_typ, stock_name, epoch_time, interval)
 );
-
--- not in use yet
-create table tb_analyse_schedule (
-    stock_typ varchar(10) not null,
-    stock_name varchar(10) not null,
-    analyse_typ varchar(10) not null,
-    interval smallint not null,
-    last_analyse_time bigint,
-    cre_on timestamp not null,
-    upd_on timestamp not null,
-    primary key (stock_typ, stock_name, analyse_typ, interval)
-);
-
